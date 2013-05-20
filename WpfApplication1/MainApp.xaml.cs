@@ -73,6 +73,13 @@ namespace WpfApplication1
                     return;
 
                 iaf.CopyInteractionDataTo(userInfos);
+
+                users.Text = "找到的使用者ID有: ";
+                foreach (var userInfo in userInfos)
+                {
+                    if( userInfo.SkeletonTrackingId > 0 )
+                        users.Text += userInfo.SkeletonTrackingId + ",";
+                }
             }
         }
 

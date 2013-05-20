@@ -5,7 +5,7 @@
     <Viewbox>
         <StackPanel>
             <StackPanel Orientation="Horizontal">
-                <TextBlock x:Name="rhand_x"  Text="0"/>
+                <TextBlock x:Name="users"  Text="無人"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal">
                 <TextBlock x:Name="rhand_y"  Text="0"/>
