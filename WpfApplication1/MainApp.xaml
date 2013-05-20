@@ -1,0 +1,22 @@
+﻿<Window x:Class="WpfApplication1.MainApp"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="SoundDirection" Height="480" Width="640">
+    <Viewbox>
+        <StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock x:Name="rhand_x"  Text="0"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock x:Name="rhand_y"  Text="0"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock x:Name="rhand_z"  Text="0"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="狀態 : "/>
+                <TextBlock x:Name="status"  Text="未確認"/>
+            </StackPanel>
+        </StackPanel>
+    </Viewbox>
+</Window>
