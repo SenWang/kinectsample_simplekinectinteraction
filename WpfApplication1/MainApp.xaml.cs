@@ -13,19 +13,79 @@ using System.Windows.Shapes;
 using Microsoft.Kinect;
 using System.Timers;
 using System.Windows.Forms;
+using Microsoft.Kinect.Toolkit.Interaction;
 
 namespace WpfApplication1
 {
+    public class DummyInteractionClient : IInteractionClient
+    {
+        public InteractionInfo GetInteractionInfoAtLocation(
+            int skeletonTrackingId, InteractionHandType handType, 
+            double x, double y)
+        {
+            var result = new InteractionInfo();
+            result.IsGripTarget = true;
+            result.IsPressTarget = true;
+            result.PressAttractionPointX = 0.5;
+            result.PressAttractionPointY = 0.5;
+            result.PressTargetControlId = 1;
+     
+            return result;
+        }
+    }
+
     public partial class MainApp : Window
     {
         KinectSensor kinect;
+        InteractionStream interStream;
+        Skeleton[] skeletons; 
+        UserInfo[] userInfos; 
         public MainApp(KinectSensor sensor) : this()
         {
             kinect = sensor;
+            skeletons = new Skeleton[kinect.SkeletonStream.FrameSkeletonArrayLength];
+            userInfos = new UserInfo[InteractionFrame.UserInfoArrayLength];
+
+            kinect.DepthStream.Range = DepthRange.Near;
+            kinect.DepthStream.Enable(DepthImageFormat.Resolution640x480Fps30);
+            kinect.DepthFrameReady += kinect_DepthFrameReady;
+
+            kinect.SkeletonStream.TrackingMode = SkeletonTrackingMode.Seated;
+            kinect.SkeletonStream.EnableTrackingInNearRange = true;
             kinect.SkeletonStream.Enable();
             kinect.SkeletonFrameReady += kinect_SkeletonFrameReady;
+  
+            interStream = new InteractionStream(kinect, new DummyInteractionClient());
+            interStream.InteractionFrameReady += interStream_InteractionFrameReady;
+           
             kinect.Start();
+        }
+        public MainApp()
+        {
+            InitializeComponent();
+        }
 
+        void interStream_InteractionFrameReady(object sender, InteractionFrameReadyEventArgs e)
+        {
+            using (var iaf = e.OpenInteractionFrame())
+            {
+                if (iaf == null)
+                    return;
+
+                iaf.CopyInteractionDataTo(userInfos);
+            }
+        }
+
+        void kinect_DepthFrameReady(object sender, DepthImageFrameReadyEventArgs e)
+        {
+            using (DepthImageFrame depthFrame = e.OpenDepthImageFrame())
+            {
+
+                if (depthFrame == null)
+                    return;
+
+                interStream.ProcessDepth(depthFrame.GetRawPixelData(), depthFrame.Timestamp);
+            }
         }
 
         void kinect_SkeletonFrameReady(object sender, SkeletonFrameReadyEventArgs e)
@@ -35,50 +95,14 @@ namespace WpfApplication1
                 if (skf == null)
                     return;
 
-                Skeleton[] FrameSkeletons = new Skeleton[skf.SkeletonArrayLength];
-                skf.CopySkeletonDataTo(FrameSkeletons);
-                Skeleton user = (from s in FrameSkeletons
-                                         where s.TrackingState == SkeletonTrackingState.Tracked
-                                         select s).FirstOrDefault();
-                if (user == null)
-                    return;
-
-                Joint righthand = user.Joints[JointType.HandRight];
-                rhand_x.Text = String.Format("右手 X:{0:0.0}", righthand.Position.X);
-                rhand_y.Text = String.Format("右手 Y:{0:0.0}", righthand.Position.Y);
-                rhand_z.Text = String.Format("右手 Z:{0:0.0}", righthand.Position.Z);
-
-                PostureConfirm(user);
-                Joint hipcenter = user.Joints[JointType.HipCenter];
-
-
+                skf.CopySkeletonDataTo(skeletons);
+                var accelerometerReading = kinect.AccelerometerGetCurrentReading();
+                interStream.ProcessSkeleton(skeletons, accelerometerReading, skf.Timestamp);
             }
         }
-        bool actiongate = false; 
-        private void PostureConfirm(Skeleton user)
-        {
-            Joint righthand = user.Joints[JointType.HandRight];
-            Joint hipcenter = user.Joints[JointType.HipCenter];
-            if (Math.Abs(righthand.Position.X - hipcenter.Position.X) > 0.6)
-            {
-                status.Text = "觸發確認";
-                if (actiongate == false)
-                {
-                    actiongate = true;
-                    SendKeys.SendWait("{Right}");
-                }
-            }
-            else
-            {
-                status.Text = "無觸發";
-                actiongate = false;
-            }
-        }
+        
 
 
-        public MainApp()
-        {
-            InitializeComponent();
-        }
+
     }
 }
